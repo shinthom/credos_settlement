@@ -36,6 +36,9 @@ public class OutboxEvent {
   @Column(name = "created_at", nullable = false)
   private Instant createdAt;
 
+  @Column(name = "processing_started_at")
+  private Instant processingStartedAt;
+
   protected OutboxEvent() {}
 
   public OutboxEvent(
@@ -75,12 +78,17 @@ public class OutboxEvent {
     return createdAt;
   }
 
-  public void markProcessing() {
+  public Instant getProcessingStartedAt() {
+    return processingStartedAt;
+  }
+
+  public void markProcessing(Instant now) {
     if (status != OutboxEventStatus.PENDING) {
       throw new IllegalStateException("Only PENDING event can be processed");
     }
 
     status = OutboxEventStatus.PROCESSING;
+    processingStartedAt = now;
   }
 
   public void markProcessed() {
@@ -89,5 +97,6 @@ public class OutboxEvent {
     }
 
     status = OutboxEventStatus.PROCESSED;
+    processingStartedAt = null;
   }
 }
