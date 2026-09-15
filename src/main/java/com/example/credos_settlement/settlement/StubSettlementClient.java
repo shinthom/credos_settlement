@@ -8,6 +8,16 @@ public class StubSettlementClient implements SettlementClient {
 
   @Override
   public void settle(UUID transferKey) {
-    System.out.println("Settling transfer: " + transferKey);
+
+    System.out.println("Settlement started: " + transferKey);
+
+    try {
+      Thread.sleep(3000);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new RuntimeException(e);
+    }
+
+    System.out.println("Settlement completed: " + transferKey);
   }
 }
