@@ -9,9 +9,13 @@ import org.springframework.transaction.annotation.Transactional;
 public class OutboxEventService {
 
   private final OutboxEventRepository outboxEventRepository;
+  private final OutboxRetryPolicy retryPolicy;
 
-  public OutboxEventService(OutboxEventRepository outboxEventRepository) {
+  public OutboxEventService(
+      OutboxEventRepository outboxEventRepository, OutboxRetryPolicy retryPolicy) {
     this.outboxEventRepository = outboxEventRepository;
+
+    this.retryPolicy = retryPolicy;
   }
 
   /**
@@ -20,11 +24,15 @@ public class OutboxEventService {
    */
   @Transactional
   public Optional<ClaimedOutboxEvent> claimNext() {
+
+    Instant now = Instant.now();
+
     return outboxEventRepository
-        .findNextPendingForUpdate()
+        .findNextPendingForUpdate(now)
         .map(
             event -> {
-              event.markProcessing(Instant.now());
+              event.markProcessing(now);
+
               return new ClaimedOutboxEvent(event.getId(), event.getTransferKey());
             });
   }
@@ -35,5 +43,12 @@ public class OutboxEventService {
     OutboxEvent event = outboxEventRepository.findById(eventId).orElseThrow();
 
     event.markProcessed();
+  }
+
+  @Transactional
+  public void handleFailure(Long eventId, String error) {
+    OutboxEvent event = outboxEventRepository.findById(eventId).orElseThrow();
+
+    retryPolicy.apply(event, Instant.now(), error);
   }
 }
