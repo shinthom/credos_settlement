@@ -1,3 +1,15 @@
 spring:
   application:
     name: credos_settlement
+
+  datasource:
+      url: jdbc:postgresql://localhost:5432/credos_settlement
+      username: settlement
+      password: settlement
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+  flyway:
+    enabled: true

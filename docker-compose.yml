@@ -1,0 +1,18 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: credos-settlement-postgres
+
+    environment:
+      POSTGRES_USER: settlement
+      POSTGRES_PASSWORD: settlement
+      POSTGRES_DB: credos_settlement
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
