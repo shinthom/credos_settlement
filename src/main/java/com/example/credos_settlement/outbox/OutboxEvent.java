@@ -39,6 +39,15 @@ public class OutboxEvent {
   @Column(name = "processing_started_at")
   private Instant processingStartedAt;
 
+  @Column(nullable = false)
+  private int attempts;
+
+  @Column(name = "next_attempt_at")
+  private Instant nextAttemptAt;
+
+  @Column(name = "last_error")
+  private String lastError;
+
   protected OutboxEvent() {}
 
   public OutboxEvent(
@@ -82,6 +91,18 @@ public class OutboxEvent {
     return processingStartedAt;
   }
 
+  public int getAttempts() {
+    return attempts;
+  }
+
+  public Instant getNextAttemptAt() {
+    return nextAttemptAt;
+  }
+
+  public String getLastError() {
+    return lastError;
+  }
+
   public void markProcessing(Instant now) {
     if (status != OutboxEventStatus.PENDING) {
       throw new IllegalStateException("Only PENDING event can be processed");
@@ -89,6 +110,9 @@ public class OutboxEvent {
 
     status = OutboxEventStatus.PROCESSING;
     processingStartedAt = now;
+
+    attempts++;
+    nextAttemptAt = null;
   }
 
   public void markProcessed() {
@@ -98,5 +122,30 @@ public class OutboxEvent {
 
     status = OutboxEventStatus.PROCESSED;
     processingStartedAt = null;
+    nextAttemptAt = null;
+    lastError = null;
+  }
+
+  public void markFailed(String error) {
+    if (status != OutboxEventStatus.PROCESSING) {
+      throw new IllegalStateException("Only PROCESSING event can fail");
+    }
+
+    status = OutboxEventStatus.FAILED;
+    processingStartedAt = null;
+    nextAttemptAt = null;
+    lastError = error;
+  }
+
+  public void scheduleRetry(Instant nextAttemptAt, String error) {
+    if (status != OutboxEventStatus.PROCESSING) {
+      throw new IllegalStateException("Only PROCESSING event can be retried");
+    }
+
+    status = OutboxEventStatus.PENDING;
+    processingStartedAt = null;
+
+    this.nextAttemptAt = nextAttemptAt;
+    this.lastError = error;
   }
 }

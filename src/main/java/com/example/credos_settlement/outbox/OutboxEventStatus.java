@@ -8,5 +8,11 @@ public enum OutboxEventStatus {
   PROCESSING,
 
   /** External settlement has completed. */
-  PROCESSED
+  PROCESSED,
+
+  /**
+   * External settlement failed and the event will not be retried automatically. Terminal state,
+   * unlike a stale PROCESSING event which the recovery worker resets to PENDING.
+   */
+  FAILED
 }
