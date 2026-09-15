@@ -75,7 +75,19 @@ public class OutboxEvent {
     return createdAt;
   }
 
+  public void markProcessing() {
+    if (status != OutboxEventStatus.PENDING) {
+      throw new IllegalStateException("Only PENDING event can be processed");
+    }
+
+    status = OutboxEventStatus.PROCESSING;
+  }
+
   public void markProcessed() {
-    this.status = OutboxEventStatus.PROCESSED;
+    if (status != OutboxEventStatus.PROCESSING) {
+      throw new IllegalStateException("Only PROCESSING event can be completed");
+    }
+
+    status = OutboxEventStatus.PROCESSED;
   }
 }
