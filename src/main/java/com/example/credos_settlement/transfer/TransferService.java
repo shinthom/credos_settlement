@@ -23,10 +23,36 @@ public class TransferService {
   }
 
   @Transactional
-  public Transfer transfer(Long fromAccountId, Long toAccountId, BigDecimal amount) {
+  public Transfer transfer(
+      String idempotencyKey, Long fromAccountId, Long toAccountId, BigDecimal amount) {
     if (fromAccountId.equals(toAccountId)) {
       throw new IllegalArgumentException("Cannot transfer to the same account");
     }
+
+    UUID transferKey = UUID.randomUUID();
+    Instant now = Instant.now();
+
+    int inserted =
+        transferRepository.insertIfAbsent(
+            idempotencyKey,
+            transferKey,
+            fromAccountId,
+            toAccountId,
+            amount,
+            TransferStatus.PROCESSING.name(),
+            now);
+
+    if (inserted == 0) {
+      Transfer existing = transferRepository.findByIdempotencyKey(idempotencyKey).orElseThrow();
+
+      if (!sameRequest(existing, fromAccountId, toAccountId, amount)) {
+        throw new IdempotencyConflictException();
+      }
+
+      return existing;
+    }
+
+    Transfer transfer = transferRepository.findByIdempotencyKey(idempotencyKey).orElseThrow();
 
     List<Account> accounts =
         accountRepository.findAllByIdForUpdate(List.of(fromAccountId, toAccountId));
@@ -37,16 +63,16 @@ public class TransferService {
     from.withdraw(amount);
     to.deposit(amount);
 
-    Transfer transfer =
-        new Transfer(
-            UUID.randomUUID(),
-            fromAccountId,
-            toAccountId,
-            amount,
-            TransferStatus.COMPLETED,
-            Instant.now());
+    transfer.complete();
 
-    return transferRepository.save(transfer);
+    return transfer;
+  }
+
+  private boolean sameRequest(
+      Transfer transfer, Long fromAccountId, Long toAccountId, BigDecimal amount) {
+    return transfer.getFromAccountId().equals(fromAccountId)
+        && transfer.getToAccountId().equals(toAccountId)
+        && transfer.getAmount().compareTo(amount) == 0;
   }
 
   private Account findAccount(List<Account> accounts, Long accountId) {
