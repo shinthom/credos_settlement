@@ -13,6 +13,8 @@ public interface TransferRepository extends JpaRepository<Transfer, Long> {
 
   Optional<Transfer> findByIdempotencyKey(String idempotencyKey);
 
+  Optional<Transfer> findByTransferKey(UUID transferKey);
+
   @Modifying
   @Query(
       value =
