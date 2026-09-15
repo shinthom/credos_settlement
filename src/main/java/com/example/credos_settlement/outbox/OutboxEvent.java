@@ -74,4 +74,8 @@ public class OutboxEvent {
   public Instant getCreatedAt() {
     return createdAt;
   }
+
+  public void markProcessed() {
+    this.status = OutboxEventStatus.PROCESSED;
+  }
 }
