@@ -29,9 +29,12 @@ public class OutboxWorker {
   }
 
   private void process(ClaimedOutboxEvent event) {
-    // Runs outside any transaction: the claim has already committed.
-    settlementClient.settle(event.transferKey());
-
-    outboxEventService.markProcessed(event.eventId());
+    try {
+      settlementClient.settle(event.transferKey());
+      outboxEventService.markProcessed(event.eventId());
+    } catch (Exception e) {
+      String error = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+      outboxEventService.handleFailure(event.eventId(), error);
+    }
   }
 }
