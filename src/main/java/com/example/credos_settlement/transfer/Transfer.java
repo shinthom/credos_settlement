@@ -20,6 +20,9 @@ public class Transfer {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
+  @Column(name = "idempotency_key", nullable = false, unique = true, length = 255)
+  private String idempotencyKey;
+
   @Column(name = "transfer_key", nullable = false, unique = true)
   private UUID transferKey;
 
@@ -42,12 +45,14 @@ public class Transfer {
   protected Transfer() {}
 
   public Transfer(
+      String idempotencyKey,
       UUID transferKey,
       Long fromAccountId,
       Long toAccountId,
       BigDecimal amount,
       TransferStatus status,
       Instant createdAt) {
+    this.idempotencyKey = idempotencyKey;
     this.transferKey = transferKey;
     this.fromAccountId = fromAccountId;
     this.toAccountId = toAccountId;
@@ -58,6 +63,10 @@ public class Transfer {
 
   public Long getId() {
     return id;
+  }
+
+  public String getIdempotencyKey() {
+    return idempotencyKey;
   }
 
   public UUID getTransferKey() {
@@ -82,5 +91,9 @@ public class Transfer {
 
   public Instant getCreatedAt() {
     return createdAt;
+  }
+
+  public void complete() {
+    this.status = TransferStatus.COMPLETED;
   }
 }
