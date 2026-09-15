@@ -3,6 +3,8 @@ package com.example.credos_settlement.transfer;
 import com.example.credos_settlement.account.Account;
 import com.example.credos_settlement.account.AccountNotFoundException;
 import com.example.credos_settlement.account.AccountRepository;
+import com.example.credos_settlement.ledger.LedgerEntry;
+import com.example.credos_settlement.ledger.LedgerEntryRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -15,11 +17,15 @@ public class TransferService {
 
   private final AccountRepository accountRepository;
   private final TransferRepository transferRepository;
+  private final LedgerEntryRepository ledgerEntryRepository;
 
   public TransferService(
-      AccountRepository accountRepository, TransferRepository transferRepository) {
+      AccountRepository accountRepository,
+      TransferRepository transferRepository,
+      LedgerEntryRepository ledgerEntryRepository) {
     this.accountRepository = accountRepository;
     this.transferRepository = transferRepository;
+    this.ledgerEntryRepository = ledgerEntryRepository;
   }
 
   @Transactional
@@ -62,6 +68,13 @@ public class TransferService {
 
     from.withdraw(amount);
     to.deposit(amount);
+
+    LedgerEntry debitEntry =
+        new LedgerEntry(transfer.getTransferKey(), fromAccountId, amount.negate(), now);
+    LedgerEntry creditEntry = new LedgerEntry(transfer.getTransferKey(), toAccountId, amount, now);
+
+    ledgerEntryRepository.save(debitEntry);
+    ledgerEntryRepository.save(creditEntry);
 
     transfer.complete();
 
