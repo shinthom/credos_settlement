@@ -1,5 +1,6 @@
 package com.example.credos_settlement.outbox;
 
+import java.time.Instant;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,8 +24,7 @@ public class OutboxEventService {
         .findNextPendingForUpdate()
         .map(
             event -> {
-              event.markProcessing();
-
+              event.markProcessing(Instant.now());
               return new ClaimedOutboxEvent(event.getId(), event.getTransferKey());
             });
   }
