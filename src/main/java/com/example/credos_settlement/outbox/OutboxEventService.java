@@ -46,9 +46,16 @@ public class OutboxEventService {
   }
 
   @Transactional
-  public void handleFailure(Long eventId, String error) {
+  public void handleRetryableFailure(Long eventId, String error) {
     OutboxEvent event = outboxEventRepository.findById(eventId).orElseThrow();
 
     retryPolicy.apply(event, Instant.now(), error);
+  }
+
+  @Transactional
+  public void handlePermanentFailure(Long eventId, String error) {
+    OutboxEvent event = outboxEventRepository.findById(eventId).orElseThrow();
+
+    event.markFailed(error);
   }
 }

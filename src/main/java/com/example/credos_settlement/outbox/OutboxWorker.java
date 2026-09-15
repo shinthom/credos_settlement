@@ -1,5 +1,7 @@
 package com.example.credos_settlement.outbox;
 
+import com.example.credos_settlement.settlement.PermanentSettlementException;
+import com.example.credos_settlement.settlement.RetryableSettlementException;
 import com.example.credos_settlement.settlement.SettlementClient;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -32,9 +34,16 @@ public class OutboxWorker {
     try {
       settlementClient.settle(event.transferKey());
       outboxEventService.markProcessed(event.eventId());
+    } catch (RetryableSettlementException e) {
+      outboxEventService.handleRetryableFailure(event.eventId(), errorMessage(e));
+    } catch (PermanentSettlementException e) {
+      outboxEventService.handlePermanentFailure(event.eventId(), errorMessage(e));
     } catch (Exception e) {
-      String error = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
-      outboxEventService.handleFailure(event.eventId(), error);
+      outboxEventService.handleRetryableFailure(event.eventId(), errorMessage(e));
     }
+  }
+
+  private String errorMessage(Exception e) {
+    return e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
   }
 }
