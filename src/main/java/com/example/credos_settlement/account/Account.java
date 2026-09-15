@@ -49,4 +49,16 @@ public class Account {
   public Instant getCreatedAt() {
     return createdAt;
   }
+
+  public void withdraw(BigDecimal amount) {
+    if (balance.compareTo(amount) < 0) {
+      throw new InsufficientBalanceException();
+    }
+
+    balance = balance.subtract(amount);
+  }
+
+  public void deposit(BigDecimal amount) {
+    balance = balance.add(amount);
+  }
 }
