@@ -5,6 +5,10 @@ import com.example.credos_settlement.account.AccountNotFoundException;
 import com.example.credos_settlement.account.AccountRepository;
 import com.example.credos_settlement.ledger.LedgerEntry;
 import com.example.credos_settlement.ledger.LedgerEntryRepository;
+import com.example.credos_settlement.outbox.OutboxEvent;
+import com.example.credos_settlement.outbox.OutboxEventRepository;
+import com.example.credos_settlement.outbox.OutboxEventStatus;
+import com.example.credos_settlement.outbox.OutboxEventType;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -18,14 +22,17 @@ public class TransferService {
   private final AccountRepository accountRepository;
   private final TransferRepository transferRepository;
   private final LedgerEntryRepository ledgerEntryRepository;
+  private final OutboxEventRepository outboxEventRepository;
 
   public TransferService(
       AccountRepository accountRepository,
       TransferRepository transferRepository,
-      LedgerEntryRepository ledgerEntryRepository) {
+      LedgerEntryRepository ledgerEntryRepository,
+      OutboxEventRepository outboxEventRepository) {
     this.accountRepository = accountRepository;
     this.transferRepository = transferRepository;
     this.ledgerEntryRepository = ledgerEntryRepository;
+    this.outboxEventRepository = outboxEventRepository;
   }
 
   @Transactional
@@ -75,6 +82,15 @@ public class TransferService {
 
     ledgerEntryRepository.save(debitEntry);
     ledgerEntryRepository.save(creditEntry);
+
+    OutboxEvent outboxEvent =
+        new OutboxEvent(
+            UUID.randomUUID(),
+            transfer.getTransferKey(),
+            OutboxEventType.SETTLEMENT_REQUESTED,
+            OutboxEventStatus.PENDING,
+            now);
+    outboxEventRepository.save(outboxEvent);
 
     transfer.complete();
 
