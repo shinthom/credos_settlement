@@ -29,7 +29,9 @@ public class ReconciliationService {
     List<LedgerEntry> entries = ledgerEntryRepository.findAllByTransferKey(transferKey);
 
     BigDecimal debitAmount = sumForAccount(entries, transfer.getFromAccountId());
+
     BigDecimal creditAmount = sumForAccount(entries, transfer.getToAccountId());
+
     BigDecimal ledgerSum =
         entries.stream().map(LedgerEntry::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
 
