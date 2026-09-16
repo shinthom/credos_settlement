@@ -1,6 +1,7 @@
 package com.example.credos_settlement.outbox;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,5 +58,14 @@ public class OutboxEventService {
     OutboxEvent event = outboxEventRepository.findById(eventId).orElseThrow();
 
     event.markFailed(error);
+  }
+
+  @Transactional(readOnly = true)
+  public List<OutboxEventResponse> getFailedEvents() {
+    return outboxEventRepository
+        .findAllByStatusOrderByCreatedAtAsc(OutboxEventStatus.FAILED)
+        .stream()
+        .map(OutboxEventResponse::from)
+        .toList();
   }
 }
