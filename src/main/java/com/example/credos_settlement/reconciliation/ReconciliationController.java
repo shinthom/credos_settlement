@@ -17,8 +17,12 @@ public class ReconciliationController {
       ReconciliationService reconciliationService,
       ExternalReconciliationService externalReconciliationService) {
     this.reconciliationService = reconciliationService;
-
     this.externalReconciliationService = externalReconciliationService;
+  }
+
+  @GetMapping("/transfers/{transferKey}")
+  public TransferReconciliationResult reconcileTransfer(@PathVariable UUID transferKey) {
+    return reconciliationService.reconcile(transferKey);
   }
 
   @GetMapping("/external/transfers/{transferKey}")
