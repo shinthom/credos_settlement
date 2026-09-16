@@ -1,7 +1,6 @@
 package com.example.credos_settlement.outbox;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -56,11 +55,11 @@ public interface OutboxEventRepository extends JpaRepository<OutboxEvent, Long> 
           WHERE status = 'PROCESSING'
             AND processing_started_at < :threshold
           ORDER BY processing_started_at
-          LIMIT 100
+          LIMIT 1
           FOR UPDATE SKIP LOCKED
           """,
       nativeQuery = true)
-  List<OutboxEvent> findStaleProcessingForUpdate(@Param("threshold") Instant threshold);
+  Optional<OutboxEvent> findNextStaleProcessingForUpdate(@Param("threshold") Instant threshold);
 
   Optional<OutboxEvent> findByTransferKeyAndEventType(UUID transferKey, OutboxEventType eventType);
 }
