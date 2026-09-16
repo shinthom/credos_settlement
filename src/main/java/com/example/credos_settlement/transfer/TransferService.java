@@ -13,11 +13,14 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class TransferService {
+  private static final Logger log = LoggerFactory.getLogger(TransferService.class);
 
   private final AccountRepository accountRepository;
   private final TransferRepository transferRepository;
@@ -59,8 +62,21 @@ public class TransferService {
       Transfer existing = transferRepository.findByIdempotencyKey(idempotencyKey).orElseThrow();
 
       if (!sameRequest(existing, fromAccountId, toAccountId, amount)) {
+        log.warn(
+            "Idempotency conflict: idempotencyKey={}, existingTransferKey={}, fromAccountId={}, toAccountId={}, amount={}",
+            idempotencyKey,
+            existing.getTransferKey(),
+            fromAccountId,
+            toAccountId,
+            amount);
+
         throw new IdempotencyConflictException();
       }
+
+      log.info(
+          "Duplicate transfer request, returning existing transfer: idempotencyKey={}, transferKey={}",
+          idempotencyKey,
+          existing.getTransferKey());
 
       return existing;
     }
@@ -93,6 +109,13 @@ public class TransferService {
     outboxEventRepository.save(outboxEvent);
 
     transfer.complete();
+
+    log.info(
+        "Transfer completed and settlement requested: transferKey={}, fromAccountId={}, toAccountId={}, amount={}",
+        transfer.getTransferKey(),
+        fromAccountId,
+        toAccountId,
+        amount);
 
     return transfer;
   }
