@@ -115,6 +115,14 @@ public class OutboxEvent {
     nextAttemptAt = null;
   }
 
+  public void refreshProcessingStartedAt(Instant now) {
+    if (status != OutboxEventStatus.PROCESSING) {
+      throw new IllegalStateException("Only PROCESSING event can be recovered");
+    }
+
+    processingStartedAt = now;
+  }
+
   public void markProcessed() {
     if (status != OutboxEventStatus.PROCESSING) {
       throw new IllegalStateException("Only PROCESSING event can be completed");

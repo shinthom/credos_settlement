@@ -12,28 +12,24 @@ public class OutboxRecoveryService {
   private static final Duration STALE_TIMEOUT = Duration.ofMinutes(5);
 
   private final OutboxEventRepository outboxEventRepository;
-  private final OutboxRetryPolicy retryPolicy;
 
-  public OutboxRecoveryService(
-      OutboxEventRepository outboxEventRepository, OutboxRetryPolicy retryPolicy) {
+  public OutboxRecoveryService(OutboxEventRepository outboxEventRepository) {
     this.outboxEventRepository = outboxEventRepository;
-
-    this.retryPolicy = retryPolicy;
   }
 
   @Transactional
-  public int recoverStaleEvents() {
-
+  public List<StaleOutboxEvent> claimStaleEvents() {
     Instant now = Instant.now();
-
     Instant threshold = now.minus(STALE_TIMEOUT);
 
     List<OutboxEvent> events = outboxEventRepository.findStaleProcessingForUpdate(threshold);
 
-    for (OutboxEvent event : events) {
-      retryPolicy.apply(event, now, "Processing timed out");
-    }
-
-    return events.size();
+    return events.stream()
+        .map(
+            event -> {
+              event.refreshProcessingStartedAt(now);
+              return new StaleOutboxEvent(event.getId(), event.getTransferKey());
+            })
+        .toList();
   }
 }
