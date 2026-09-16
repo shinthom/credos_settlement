@@ -11,13 +11,18 @@ import org.springframework.web.bind.annotation.RestController;
 public class ReconciliationController {
 
   private final ReconciliationService reconciliationService;
+  private final ExternalReconciliationService externalReconciliationService;
 
-  public ReconciliationController(ReconciliationService reconciliationService) {
+  public ReconciliationController(
+      ReconciliationService reconciliationService,
+      ExternalReconciliationService externalReconciliationService) {
     this.reconciliationService = reconciliationService;
+
+    this.externalReconciliationService = externalReconciliationService;
   }
 
-  @GetMapping("/transfers/{transferKey}")
-  public TransferReconciliationResult reconcile(@PathVariable UUID transferKey) {
-    return reconciliationService.reconcile(transferKey);
+  @GetMapping("/external/transfers/{transferKey}")
+  public ExternalReconciliationResult reconcileExternal(@PathVariable UUID transferKey) {
+    return externalReconciliationService.reconcile(transferKey);
   }
 }
