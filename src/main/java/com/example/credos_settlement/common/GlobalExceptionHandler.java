@@ -4,6 +4,8 @@ import com.example.credos_settlement.account.AccountNotFoundException;
 import com.example.credos_settlement.account.InsufficientBalanceException;
 import com.example.credos_settlement.transfer.IdempotencyConflictException;
 import java.time.Instant;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+  private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
   @ExceptionHandler(AccountNotFoundException.class)
   public ResponseEntity<ApiErrorResponse> handleAccountNotFound(AccountNotFoundException e) {
@@ -53,6 +56,8 @@ public class GlobalExceptionHandler {
 
   private ResponseEntity<ApiErrorResponse> build(HttpStatus status, String code, String message) {
     ApiErrorResponse body = new ApiErrorResponse(status.value(), code, message, Instant.now());
+
+    log.warn("Request failed: status={}, code={}, message={}", status.value(), code, message);
 
     return ResponseEntity.status(status).body(body);
   }

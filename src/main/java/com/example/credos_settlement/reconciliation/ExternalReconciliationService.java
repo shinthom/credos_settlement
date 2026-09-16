@@ -7,11 +7,14 @@ import com.example.credos_settlement.outbox.OutboxEventType;
 import com.example.credos_settlement.settlement.SettlementClient;
 import com.example.credos_settlement.settlement.SettlementStatus;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ExternalReconciliationService {
+  private static final Logger log = LoggerFactory.getLogger(ExternalReconciliationService.class);
 
   private final OutboxEventRepository outboxEventRepository;
   private final SettlementClient settlementClient;
@@ -33,6 +36,17 @@ public class ExternalReconciliationService {
     SettlementStatus externalStatus = settlementClient.getStatus(transferKey);
 
     ExternalReconciliationStatus status = determineStatus(event.getStatus(), externalStatus);
+
+    if (status == ExternalReconciliationStatus.MATCHED) {
+      log.info("External reconciliation matched: transferKey={}", transferKey);
+    } else {
+      log.warn(
+          "External reconciliation mismatch: transferKey={}, internalStatus={}, externalStatus={}, result={}",
+          transferKey,
+          event.getStatus(),
+          externalStatus,
+          status);
+    }
 
     return new ExternalReconciliationResult(transferKey, event.getStatus(), externalStatus, status);
   }

@@ -7,11 +7,14 @@ import com.example.credos_settlement.transfer.TransferRepository;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ReconciliationService {
+  private static final Logger log = LoggerFactory.getLogger(ReconciliationService.class);
 
   private final TransferRepository transferRepository;
   private final LedgerEntryRepository ledgerEntryRepository;
@@ -40,6 +43,19 @@ public class ReconciliationService {
             && debitAmount.compareTo(transfer.getAmount().negate()) == 0
             && creditAmount.compareTo(transfer.getAmount()) == 0
             && ledgerSum.compareTo(BigDecimal.ZERO) == 0;
+
+    if (matched) {
+      log.info("Ledger reconciliation matched: transferKey={}", transferKey);
+    } else {
+      log.warn(
+          "Ledger reconciliation mismatch: transferKey={}, transferAmount={}, debitAmount={}, creditAmount={}, ledgerSum={}, entryCount={}",
+          transferKey,
+          transfer.getAmount(),
+          debitAmount,
+          creditAmount,
+          ledgerSum,
+          entries.size());
+    }
 
     return new TransferReconciliationResult(
         transfer.getTransferKey(),
